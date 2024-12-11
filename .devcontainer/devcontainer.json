@@ -4,22 +4,22 @@
     "cpus": 4
   },
   "waitFor": "onCreateCommand",
-  "updateContentCommand": "npm install && npm run build",
+  "onCreateCommand": "sudo apt install ffmpeg -y",
+  "updateContentCommand": "pnpm i",
   "postCreateCommand": "",
   "postAttachCommand": {
-    "server": "npm run dev"
+    "server": "pnpm dev"
   },
   "customizations": {
     "codespaces": {
       "openFiles": [
-        "pages/index.js"
+        "src/app/page.ts"
       ]
     }
   },
   "portsAttributes": {
     "3000": {
-      "label": "Application",
-      "onAutoForward": "openPreview"
+      "label": "Application"
     }
   },
   "forwardPorts": [3000]
