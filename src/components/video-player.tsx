@@ -1,154 +1,82 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { useRef, useEffect, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
-import { PlayIcon, PauseIcon, SkipBackIcon, SkipForwardIcon, Maximize2Icon } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
+import videojs from 'video.js'
+import Player from 'video.js/dist/types/player'
+import 'video.js/dist/video-js.css'
+import './video-player.css'
 
 export function VideoPlayer() {
-    const [isPlaying, setIsPlaying] = useState(false)
-    const [currentTime, setCurrentTime] = useState(0)
-    const [duration, setDuration] = useState(0)
-    const videoRef = useRef<HTMLVideoElement>(null)
-    const searchParams = useSearchParams();
+    const playerRef = useRef<Player | null>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
+    const searchParams = useSearchParams()
 
-    const defaultVideo = useMemo(() => searchParams.get('path') || '[Movieku.cc].GgsOfLdnS2E01.Eps-01.720p.x264.WebDL.mp4', [searchParams]);
+    const defaultVideo = useMemo(() => searchParams.get('path') || '[Movieku.cc].GgsOfLdnS2E01.Eps-01.720p.x264.WebDL.mp4', [searchParams])
     const subtitlePath = useMemo(() => {
-        const [filename] = defaultVideo.split('.mp4');
-        return `/subtitles/${filename}.srt`;
-    }, [searchParams]);
+        const [filename] = defaultVideo.split('.mp4')
+        return `/subtitles/${filename}.vtt`
+    }, [defaultVideo])
 
     useEffect(() => {
-        const video = videoRef.current
-        if (!video) return
+        const videoElement = document.createElement('video')
+        videoElement.className = 'video-js vjs-big-play-centered vjs-theme-modern'
 
-        const updateTime = () => setCurrentTime(video.currentTime)
-        const updateDuration = () => setDuration(video.duration)
+        if (containerRef.current) {
+            containerRef.current.innerHTML = ''
+            containerRef.current.appendChild(videoElement)
+        }
 
-        video.addEventListener('timeupdate', updateTime)
-        video.addEventListener('loadedmetadata', updateDuration)
+        const player = videojs(videoElement, {
+            controls: true,
+            fluid: true,
+            responsive: true,
+            playbackRates: [0.5, 1, 1.5, 2],
+            sources: [{
+                src: `/api/stream?path=${defaultVideo}`,
+                type: 'video/mp4'
+            }],
+            tracks: [{
+                kind: 'subtitles',
+                src: subtitlePath,
+                srclang: 'en',
+                label: 'English',
+                default: true
+            }],
+            controlBar: {
+                children: [
+                    'playToggle',
+                    'volumePanel',
+                    'currentTimeDisplay',
+                    'timeDivider',
+                    'durationDisplay',
+                    'progressControl',
+                    'subtitlesButton',
+                    'playbackRateMenuButton',
+                    'fullscreenToggle',
+                ]
+            }
+        })
+
+        playerRef.current = player
 
         return () => {
-            video.removeEventListener('timeupdate', updateTime)
-            video.removeEventListener('loadedmetadata', updateDuration)
-        }
-    }, [])
-
-    const togglePlay = () => {
-        const video = videoRef.current
-        if (!video) return
-
-        if (isPlaying) {
-            video.pause()
-        } else {
-            video.play()
-        }
-        setIsPlaying(!isPlaying)
-    }
-
-    const handleSeek = (value: number[]) => {
-        const video = videoRef.current
-        if (!video) return
-
-        video.currentTime = value[0]
-        setCurrentTime(value[0])
-    }
-
-    const formatTime = (time: number) => {
-        const minutes = Math.floor(time / 60)
-        const seconds = Math.floor(time % 60)
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`
-    }
-
-    const skipBack = () => {
-        if (!videoRef.current) return;
-        videoRef.current.currentTime -= 10
-    }
-
-    const skipForward = () => {
-        if (!videoRef.current) return;
-        videoRef.current.currentTime += 10
-    }
-
-    const toggleFullscreen = useCallback(() => {
-        const video = videoRef.current
-        if (!video) return
-
-        if (document.fullscreenElement) {
-            document.exitFullscreen()
-        } else {
-            video.requestFullscreen()
-        }
-    }, [])
-
-    useEffect(() => {
-        const handleKeyPress = (e: KeyboardEvent) => {
-            if (e.key.toLowerCase() === 'f') {
-                toggleFullscreen()
+            if (playerRef.current) {
+                playerRef.current.dispose()
+                playerRef.current = null
             }
         }
-
-        window.addEventListener('keydown', handleKeyPress)
-        return () => window.removeEventListener('keydown', handleKeyPress)
-    }, [toggleFullscreen])
-
-    const onFullScreenClick = () => {
-        toggleFullscreen()
-    }
+    }, [defaultVideo, subtitlePath])
 
     return (
-        <Card>
-            <CardContent className="p-0 relative">
-                <video
-                    ref={videoRef}
-                    className="w-full"
-                    src={`/api/stream?path=${defaultVideo}`}
-                    crossOrigin="anonymous"
-                    style={{ '--webkit-media-text-track-display': 'inline' } as React.CSSProperties}
-                    controls
-                >
-                    <track
-                        kind="subtitles"
-                        src={decodeURIComponent(subtitlePath)}
-                        srcLang="en"
-                        label="English"
-                        default
-                    />
-                </video>
-                <div className="p-4">
-                    <Slider
-                        value={[currentTime]}
-                        max={duration}
-                        step={1}
-                        onValueChange={handleSeek}
-                        className="mb-4"
-                    />
-                    <div className="flex justify-between items-center">
-                        <div className="flex space-x-2">
-                            <Button size="icon" variant="outline" onClick={skipBack}>
-                                <SkipBackIcon />
-                            </Button>
-                            <Button size="icon" variant="outline" onClick={togglePlay}>
-                                {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                            </Button>
-                            <Button size="icon" variant="outline" onClick={skipForward}>
-                                <SkipForwardIcon />
-                            </Button>
-                            <Button
-                                size="icon"
-                                variant="outline"
-                                onClick={onFullScreenClick}
-                            >
-                                <Maximize2Icon className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        <div className="text-sm">
-                            {formatTime(currentTime)} / {formatTime(duration)}
-                        </div>
-                    </div>
-                </div>
+        <Card className="overflow-hidden">
+            <CardContent className="p-0">
+                <div
+                    key={defaultVideo} // Force remount when video changes
+                    ref={containerRef}
+                    data-vjs-player
+                />
             </CardContent>
         </Card>
     )

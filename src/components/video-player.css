@@ -1,0 +1,65 @@
+.video-js {
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: var(--font-geist-sans);
+}
+
+.video-js .vjs-control-bar {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  height: 4em;
+}
+
+.video-js .vjs-big-play-button {
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  width: 3em;
+  height: 3em;
+  line-height: 3em;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.video-js:hover .vjs-big-play-button {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.video-js .vjs-progress-holder {
+  height: 0.5em;
+}
+
+.video-js .vjs-play-progress {
+  background: #3b82f6;
+}
+
+.video-js .vjs-load-progress {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.video-js .vjs-progress-holder .vjs-play-progress:before {
+  font-size: 1.2em;
+  top: -0.3em;
+}
+
+.video-js .vjs-time-tooltip {
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 4px;
+}
+
+.video-js .vjs-volume-panel {
+  width: 8em;
+}
+
+.vjs-theme-modern {
+  --vjs-theme-primary: #3b82f6;
+}
+
+.video-js .vjs-volume-level {
+  background: var(--vjs-theme-primary);
+}
+
+.video-js .vjs-subtitle-control {
+  display: flex;
+}
