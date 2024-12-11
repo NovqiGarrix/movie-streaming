@@ -1,17 +1,23 @@
 .video-js {
   border-radius: 8px;
   overflow: hidden;
-  font-family: var(--font-geist-sans);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
 }
 
 .video-js .vjs-control-bar {
-  background: rgba(0, 0, 0, 0.7);
+  background: linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
   backdrop-filter: blur(10px);
-  height: 4em;
+  height: 5em;
+  padding-top: 2em;
 }
 
 .video-js .vjs-big-play-button {
-  background: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.45);
   border: none;
   border-radius: 50%;
   width: 3em;
@@ -23,15 +29,19 @@
 }
 
 .video-js:hover .vjs-big-play-button {
-  background: rgba(0, 0, 0, 0.8);
+  background-color: rgba(229, 9, 20, 1);
 }
 
 .video-js .vjs-progress-holder {
   height: 0.5em;
 }
 
+.video-js .vjs-progress-control .vjs-progress-holder {
+  height: 0.5em;
+}
+
 .video-js .vjs-play-progress {
-  background: #3b82f6;
+  background-color: #e50914;
 }
 
 .video-js .vjs-load-progress {
@@ -50,10 +60,11 @@
 
 .video-js .vjs-volume-panel {
   width: 8em;
+  margin-right: 2em;
 }
 
 .vjs-theme-modern {
-  --vjs-theme-primary: #3b82f6;
+  --vjs-theme-modern--primary: #e50914;
 }
 
 .video-js .vjs-volume-level {

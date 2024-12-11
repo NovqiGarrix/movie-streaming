@@ -33,6 +33,12 @@ export function VideoPlayer() {
             fluid: true,
             responsive: true,
             playbackRates: [0.5, 1, 1.5, 2],
+            preload: 'auto',
+            poster: '/video-poster.jpg', // Add a poster image if you have one
+            userActions: {
+                hotkeys: true,
+                doubleClick: true
+            },
             sources: [{
                 src: `/api/stream?path=${defaultVideo}`,
                 type: 'video/mp4'
@@ -52,8 +58,18 @@ export function VideoPlayer() {
                     'timeDivider',
                     'durationDisplay',
                     'progressControl',
-                    'subtitlesButton',
-                    'playbackRateMenuButton',
+                    {
+                        name: 'SubtitlesButton',
+                        button: {
+                            class: 'vjs-subtitles-button'
+                        }
+                    },
+                    {
+                        name: 'PlaybackRateMenuButton',
+                        button: {
+                            class: 'vjs-playback-rate'
+                        }
+                    },
                     'fullscreenToggle',
                 ]
             }
@@ -61,7 +77,64 @@ export function VideoPlayer() {
 
         playerRef.current = player
 
+        // Load saved progress
+        const savedProgress = localStorage.getItem(`video-progress-${defaultVideo}`)
+        if (savedProgress) {
+            player.currentTime(parseFloat(savedProgress))
+        }
+
+        // Save progress periodically
+        player.on('timeupdate', () => {
+            localStorage.setItem(`video-progress-${defaultVideo}`, (player.currentTime() ?? 0).toString())
+        })
+
+        // Clear progress when video ends
+        player.on('ended', () => {
+            localStorage.removeItem(`video-progress-${defaultVideo}`)
+        })
+
+        // Add keyboard controls
+        const handleKeyPress = (e: KeyboardEvent) => {
+            if (!playerRef.current) return;
+
+            switch (e.key.toLowerCase()) {
+                case 'arrowleft': {
+                    const currentTime = playerRef.current.currentTime() ?? 0;
+                    playerRef.current.currentTime(currentTime - 5);
+                    break;
+                }
+                case 'arrowright': {
+                    const currentTime = playerRef.current.currentTime() ?? 0;
+                    playerRef.current.currentTime(currentTime + 5);
+                    break;
+                }
+                case ' ':
+                    if (playerRef.current.paused()) {
+                        playerRef.current.play();
+                    } else {
+                        playerRef.current.pause();
+                    }
+                    e.preventDefault();
+                    break;
+                case 'f':
+                    if (playerRef.current.isFullscreen()) {
+                        playerRef.current.exitFullscreen();
+                    } else {
+                        playerRef.current.requestFullscreen();
+                    }
+                    break;
+                case 'm':
+                    playerRef.current.muted(!playerRef.current.muted());
+                    break;
+                default:
+                    break;
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyPress);
+
         return () => {
+            document.removeEventListener('keydown', handleKeyPress);
             if (playerRef.current) {
                 playerRef.current.dispose()
                 playerRef.current = null
@@ -70,12 +143,13 @@ export function VideoPlayer() {
     }, [defaultVideo, subtitlePath])
 
     return (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden shadow-2xl">
             <CardContent className="p-0">
                 <div
                     key={defaultVideo} // Force remount when video changes
                     ref={containerRef}
                     data-vjs-player
+                    className="aspect-video"
                 />
             </CardContent>
         </Card>
