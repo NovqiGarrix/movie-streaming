@@ -1,76 +1,92 @@
 .video-js {
-  border-radius: 8px;
-  overflow: hidden;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
+/* Ensure video fills container */
+.video-js video {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}
+
+/* Hide default Video.js controls */
 .video-js .vjs-control-bar {
-  background: linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.9) 0%,
-    rgba(0, 0, 0, 0.4) 100%
-  );
-  backdrop-filter: blur(10px);
-  height: 5em;
-  padding-top: 2em;
+  display: none !important;
 }
 
 .video-js .vjs-big-play-button {
-  background-color: rgba(0, 0, 0, 0.45);
-  border: none;
-  border-radius: 50%;
-  width: 3em;
-  height: 3em;
-  line-height: 3em;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  display: none !important;
 }
 
-.video-js:hover .vjs-big-play-button {
-  background-color: rgba(229, 9, 20, 1);
+.video-js .vjs-loading-spinner {
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
 }
 
-.video-js .vjs-progress-holder {
-  height: 0.5em;
+/* Ensure poster image is visible and covers the container */
+.video-js .vjs-poster {
+  background-size: cover;
+  width: 100%;
+  height: 100%;
+}
+
+/* Ensure video fills container in fullscreen */
+.video-js.vjs-fullscreen {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.video-js.vjs-fullscreen video {
+  object-fit: cover;
+}
+
+/* Custom styles for our controls */
+.video-js .custom-control-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent);
+  padding: 1rem;
+  transition: opacity 0.3s ease;
 }
 
 .video-js .vjs-progress-control .vjs-progress-holder {
   height: 0.5em;
 }
 
-.video-js .vjs-play-progress {
+.video-js.vjs-user-inactive .custom-control-bar {
+  opacity: 0;
+}
+
+.video-js .progress-bar {
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+}
+
+.video-js .progress-bar-fill {
+  height: 100%;
   background-color: #e50914;
+  position: relative;
 }
 
-.video-js .vjs-load-progress {
-  background: rgba(255, 255, 255, 0.3);
+.video-js .progress-bar-handle {
+  width: 12px;
+  height: 12px;
+  background-color: #e50914;
+  border-radius: 50%;
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
-.video-js .vjs-progress-holder .vjs-play-progress:before {
-  font-size: 1.2em;
-  top: -0.3em;
-}
-
-.video-js .vjs-time-tooltip {
-  background: rgba(0, 0, 0, 0.8);
-  border-radius: 4px;
-}
-
-.video-js .vjs-volume-panel {
-  width: 8em;
-  margin-right: 2em;
-}
-
-.vjs-theme-modern {
-  --vjs-theme-modern--primary: #e50914;
-}
-
-.video-js .vjs-volume-level {
-  background: var(--vjs-theme-primary);
-}
-
-.video-js .vjs-subtitle-control {
-  display: flex;
+.video-js .progress-bar:hover .progress-bar-handle {
+  opacity: 1;
 }
