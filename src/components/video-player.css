@@ -43,19 +43,8 @@
   object-fit: cover;
 }
 
-/* Custom styles for our controls */
-.video-js .custom-control-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent);
-  padding: 1rem;
-  transition: opacity 0.3s ease;
-}
-
 .video-js .vjs-progress-control .vjs-progress-holder {
-  height: 0.5em;
+  height: 2em;
 }
 
 .video-js.vjs-user-inactive .custom-control-bar {
