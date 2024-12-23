@@ -11,7 +11,14 @@ import { EpisodeExplorer } from './episodes-explorer'
 
 const SEEK_STEP = 10;
 
-export function VideoPlayer() {
+interface VideoPlayerProps {
+    defaultVideo: string;
+}
+
+export function VideoPlayer(props: VideoPlayerProps) {
+
+    const { defaultVideo: _defaultVideo } = props;
+
     const playerRef = useRef<Player | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const searchParams = useSearchParams()
@@ -19,7 +26,7 @@ export function VideoPlayer() {
     const rotateCcwElement = useRef<SVGSVGElement>(null);
     const [textTrackOn, setTextTrackOn] = useState(true);
 
-    const defaultVideo = useMemo(() => searchParams.get('path') || '[Movieku.cc].GgsOfLdnS2E01.Eps-01.720p.x264.WebDL.mp4', [searchParams])
+    const defaultVideo = useMemo(() => searchParams.get('path') || _defaultVideo, [searchParams])
     const subtitlePath = useMemo(() => {
         const [filename] = defaultVideo.split('.mp4')
         return `/subtitles/${filename}.vtt`
@@ -34,6 +41,7 @@ export function VideoPlayer() {
     useEffect(() => {
         const videoElement = document.createElement('video')
         videoElement.className = 'video-js vjs-big-play-centered vjs-theme-modern'
+        videoElement.style.zIndex = '0' // Ensure video is below controls
 
         if (containerRef.current) {
             containerRef.current.innerHTML = ''
@@ -234,7 +242,11 @@ export function VideoPlayer() {
         <div
             className={`relative w-full max-h-screen overflow-hidden ${isFullscreen ? 'fixed inset-0' : 'aspect-video'} group`}
             onMouseEnter={() => setShowControls(true)}
-            onMouseLeave={() => isFullscreen && setShowControls(false)}
+            onMouseLeave={() => {
+                if (!isFullscreen) {
+                    setShowControls(false)
+                }
+            }}
         >
             <div
                 key={defaultVideo} // Force remount when video changes
@@ -242,7 +254,7 @@ export function VideoPlayer() {
                 data-vjs-player
             />
 
-            <div className={`absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`absolute inset-0 z-50 bg-gradient-to-t from-black/75 via-transparent to-transparent transition-opacity duration-300 ${isFullscreen || showControls ? 'opacity-100' : 'opacity-0'}`}>
                 {/* BACK ARROW */}
                 <button className="absolute top-7 left-[46px] text-white/90 hover:text-white z-10">
                     <ArrowLeft className="w-8 h-8" />

@@ -42,3 +42,6 @@ next-env.d.ts
 videos/*
 
 public/subtitles/*
+
+temp_segments/*
+extracted_h264/*
