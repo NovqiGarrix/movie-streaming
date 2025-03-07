@@ -4,24 +4,24 @@
 mkdir -p public/subtitles
 
 # Loop through all mkv files in the videos directory
-# for file in videos/*.mkv; do
-#     if [ -f "$file" ]; then
-#         # Get filename without path and extension
-#         filename=$(basename "$file" .mkv)
-#         filepath="videos/${filename}"
+for file in videos/*.mkv; do
+    if [ -f "$file" ]; then
+        # Get filename without path and extension
+        filename=$(basename "$file" .mkv)
+        filepath="videos/${filename}"
         
-#         echo "Converting ${filepath}.mkv to MP4..."
-#         # Convert MKV to MP4
-#         if ffmpeg -i "$file" -codec copy "${filepath}.mp4"; then
-#             echo "Extracting subtitles from ${filepath}.mkv..."
-#             # Extract subtitles (this will extract all subtitle streams)
-#             if ffmpeg -i "$file" -map 0:s:0 "public/subtitles/${filename}.vtt"; then
-#                 echo "Deleting original MKV file..."
-#                 rm "$file"
-#             fi
-#         fi
-#     fi
-# done
+        echo "Converting ${filepath}.mkv to MP4..."
+        # Convert MKV to MP4
+        if ffmpeg -i "$file" -codec copy "${filepath}.mp4"; then
+            echo "Extracting subtitles from ${filepath}.mkv..."
+            # Extract subtitles (this will extract all subtitle streams)
+            if ffmpeg -i "$file" -map 0:s:0 "public/subtitles/${filename}.vtt"; then
+                echo "Deleting original MKV file..."
+                rm "$file"
+            fi
+        fi
+    fi
+done
 
 # Loop through all srt files in the subtitles directory
 # and convert them to VTT format
@@ -40,4 +40,4 @@ mkdir -p public/subtitles
 #     fi
 # done
 
-echo "Conversion and subtitle extraction completed!"
+echo "Conversi  on and subtitle extraction completed!"

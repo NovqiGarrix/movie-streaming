@@ -6,14 +6,27 @@ import videojs from 'video.js'
 import Player from 'video.js/dist/types/player'
 import 'video.js/dist/video-js.css'
 import './video-player.css'
-import { ArrowLeft, HelpCircle, Maximize, Minimize, Subtitles } from 'lucide-react'
+import { ArrowLeft, Maximize, Minimize, RotateCcw, RotateCw, Captions, CaptionsOff } from 'lucide-react'
+import { EpisodeExplorer } from './episodes-explorer'
 
-export function VideoPlayer() {
+const SEEK_STEP = 10;
+
+interface VideoPlayerProps {
+    defaultVideo: string;
+}
+
+export function VideoPlayer(props: VideoPlayerProps) {
+
+    const { defaultVideo: _defaultVideo } = props;
+
     const playerRef = useRef<Player | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const searchParams = useSearchParams()
+    const rotateCwElement = useRef<SVGSVGElement>(null);
+    const rotateCcwElement = useRef<SVGSVGElement>(null);
+    const [textTrackOn, setTextTrackOn] = useState(true);
 
-    const defaultVideo = useMemo(() => searchParams.get('path') || '[Movieku.cc].GgsOfLdnS2E01.Eps-01.720p.x264.WebDL.mp4', [searchParams])
+    const defaultVideo = useMemo(() => searchParams.get('path') || _defaultVideo, [searchParams])
     const subtitlePath = useMemo(() => {
         const [filename] = defaultVideo.split('.mp4')
         return `/subtitles/${filename}.vtt`
@@ -28,6 +41,7 @@ export function VideoPlayer() {
     useEffect(() => {
         const videoElement = document.createElement('video')
         videoElement.className = 'video-js vjs-big-play-centered vjs-theme-modern'
+        videoElement.style.zIndex = '0' // Ensure video is below controls
 
         if (containerRef.current) {
             containerRef.current.innerHTML = ''
@@ -35,10 +49,15 @@ export function VideoPlayer() {
         }
 
         const player = videojs(videoElement, {
-            controls: true,
+            controls: false,
             fluid: true,
             responsive: true,
             playbackRates: [0.5, 1, 1.5, 2],
+            preload: 'auto',
+            userActions: {
+                hotkeys: true,
+                doubleClick: true
+            },
             sources: [{
                 src: `/api/stream?path=${defaultVideo}`,
                 type: 'video/mp4'
@@ -58,8 +77,18 @@ export function VideoPlayer() {
                     'timeDivider',
                     'durationDisplay',
                     'progressControl',
-                    'subtitlesButton',
-                    'playbackRateMenuButton',
+                    {
+                        name: 'SubtitlesButton',
+                        button: {
+                            class: 'vjs-subtitles-button'
+                        }
+                    },
+                    {
+                        name: 'PlaybackRateMenuButton',
+                        button: {
+                            class: 'vjs-playback-rate'
+                        }
+                    },
                     'fullscreenToggle',
                 ]
             }
@@ -81,7 +110,80 @@ export function VideoPlayer() {
 
         playerRef.current = player
 
+        // Load saved progress
+        const savedProgress = localStorage.getItem(`video-progress-${defaultVideo}`)
+        if (savedProgress) {
+            player.currentTime(parseFloat(savedProgress))
+        }
+
+        // Save progress periodically
+        player.on('timeupdate', () => {
+            localStorage.setItem(`video-progress-${defaultVideo}`, (player.currentTime() ?? 0).toString())
+        })
+
+        // Clear progress when video ends
+        player.on('ended', () => {
+            localStorage.removeItem(`video-progress-${defaultVideo}`)
+        })
+
+        // Add keyboard controls
+        const handleKeyPress = (e: KeyboardEvent) => {
+            if (!playerRef.current) return;
+
+            switch (e.key.toLowerCase()) {
+                case 'arrowleft': {
+                    if (!rotateCcwElement.current) return;
+                    const currentTime = playerRef.current.currentTime() ?? 0;
+                    rotateCcwElement.current.classList.add('rotate-45');
+                    playerRef.current.currentTime(currentTime - SEEK_STEP < 0 ? 0 : currentTime - SEEK_STEP);
+
+                    setTimeout(() => {
+                        if (rotateCcwElement.current) {
+                            rotateCcwElement.current.classList.remove('rotate-45');
+                        }
+                    }, 300);
+                    break;
+                }
+                case 'arrowright': {
+                    if (!rotateCwElement.current) return;
+                    const currentTime = playerRef.current.currentTime() ?? 0;
+                    rotateCwElement.current.classList.add('rotate-45');
+                    playerRef.current.currentTime(currentTime + SEEK_STEP);
+
+                    setTimeout(() => {
+                        if (rotateCwElement.current) {
+                            rotateCwElement.current.classList.remove('rotate-45');
+                        }
+                    }, 300);
+                    break;
+                }
+                case ' ':
+                    if (playerRef.current.paused()) {
+                        playerRef.current.play();
+                    } else {
+                        playerRef.current.pause();
+                    }
+                    e.preventDefault();
+                    break;
+                case 'f':
+                    if (playerRef.current.isFullscreen()) {
+                        playerRef.current.exitFullscreen();
+                    } else {
+                        playerRef.current.requestFullscreen();
+                    }
+                    break;
+                case 'm':
+                    playerRef.current.muted(!playerRef.current.muted());
+                    break;
+                default:
+                    break;
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyPress);
+
         return () => {
+            document.removeEventListener('keydown', handleKeyPress);
             if (playerRef.current) {
                 playerRef.current.dispose()
                 playerRef.current = null
@@ -126,11 +228,25 @@ export function VideoPlayer() {
         }
     }
 
+    function toggleSubtitle() {
+        // @ts-expect-error - textTracks is not in the types
+        const track = playerRef.current?.textTracks()[0]
+        console.log(track)
+        if (track) {
+            track.mode = track.mode === 'showing' ? 'hidden' : 'showing'
+            setTextTrackOn(track.mode === 'showing');
+        }
+    }
+
     return (
         <div
-            className={`relative w-full h-full ${isFullscreen ? 'fixed inset-0' : 'aspect-video'} group`}
+            className={`relative w-full max-h-screen overflow-hidden ${isFullscreen ? 'fixed inset-0' : 'aspect-video'} group`}
             onMouseEnter={() => setShowControls(true)}
-            onMouseLeave={() => isFullscreen && setShowControls(false)}
+            onMouseLeave={() => {
+                if (!isFullscreen) {
+                    setShowControls(false)
+                }
+            }}
         >
             <div
                 key={defaultVideo} // Force remount when video changes
@@ -138,28 +254,34 @@ export function VideoPlayer() {
                 data-vjs-player
             />
 
-            <div className={`absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-                <button className="absolute top-4 left-4 text-white/90 hover:text-white z-10">
+            <div className={`absolute inset-0 z-50 bg-gradient-to-t from-black/75 via-transparent to-transparent transition-opacity duration-300 ${isFullscreen || showControls ? 'opacity-100' : 'opacity-0'}`}>
+                {/* BACK ARROW */}
+                <button className="absolute top-7 left-[46px] text-white/90 hover:text-white z-10">
                     <ArrowLeft className="w-8 h-8" />
                 </button>
 
-                <div className="absolute bottom-0 left-0 right-0 px-6 pb-6">
-                    <div className="relative w-full h-1 mb-4 group cursor-pointer"
-                        onClick={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect()
-                            const pos = (e.clientX - rect.left) / rect.width
-                            handleSeek(duration * pos)
-                        }}>
-                        <div className="absolute inset-0 bg-white/30">
-                            <div
-                                className="h-full bg-red-600"
-                                style={{ width: `${(currentTime / duration) * 100}%` }}
-                            />
-                            <div
-                                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                style={{ left: `${(currentTime / duration) * 100}%` }}
-                            />
+                <div className="absolute bottom-0 left-0 right-0 px-12 pb-8">
+                    <div className="flex items-center gap-5 mb-4">
+                        <div className="relative w-full h-1 group cursor-pointer"
+                            onClick={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect()
+                                const pos = (e.clientX - rect.left) / rect.width
+                                handleSeek(duration * pos)
+                            }}>
+                            <div className="absolute inset-0 bg-white/30">
+                                <div
+                                    className="h-full bg-red-600"
+                                    style={{ width: `${(currentTime / duration) * 100}%` }}
+                                />
+                                <div
+                                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-red-600 rounded-full opacity-0 group-hover:opacity-100 duration-150 transition-opacity"
+                                    style={{ left: `${(currentTime / duration) * 100}%` }}
+                                />
+                            </div>
                         </div>
+                        <span className="text-white text-sm font-medium">
+                            {formatTime(duration)}
+                        </span>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -168,37 +290,50 @@ export function VideoPlayer() {
                             className="text-white/90 hover:text-white"
                         >
                             {playerRef.current?.paused() ? (
-                                <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M8 5v14l11-7z" />
                                 </svg>
                             ) : (
-                                <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M8 5v14h2V5H8zm6 0v14h2V5h-2z" />
                                 </svg>
                             )}
                         </button>
 
-                        <span className="text-white text-sm">
-                            {formatTime(currentTime)} / {formatTime(duration)}
-                        </span>
+                        <button className="text-white/90 hover:text-white">
+                            <div className="relative">
+                                <RotateCcw ref={rotateCcwElement} className="w-9 h-9 transform transition-transform duration-300" />
+                                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xs p-0.5 font-medium">
+                                    10
+                                </span>
+                            </div>
+                        </button>
+
+                        <button className="text-white/90 hover:text-white">
+                            <div className="relative">
+                                <RotateCw ref={rotateCwElement} className="w-9 h-9 transform transition-transform duration-300" />
+                                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xs p-0.5 font-medium">
+                                    10
+                                </span>
+                            </div>
+                        </button>
 
                         <span className="text-white text-lg ml-4">{videoTitle}</span>
 
-                        <div className="flex items-center gap-4 ml-auto">
-                            <button className="text-white/90 hover:text-white">
-                                <HelpCircle className="w-7 h-7" />
-                            </button>
-                            <button className="text-white/90 hover:text-white">
-                                <Subtitles className="w-7 h-7" />
+                        <div className="flex items-center gap-6 ml-auto">
+                            <EpisodeExplorer />
+
+                            <button onClick={toggleSubtitle} className="text-white/90 hover:text-white">
+                                {textTrackOn ? <Captions className="w-9 h-9" /> : <CaptionsOff className="w-9 h-9" />}
                             </button>
                             <button
                                 className="text-white/90 hover:text-white"
                                 onClick={handleFullscreenToggle}
                             >
                                 {isFullscreen ? (
-                                    <Minimize className="w-7 h-7" />
+                                    <Minimize className="w-8 h-8" />
                                 ) : (
-                                    <Maximize className="w-7 h-7" />
+                                    <Maximize className="w-8 h-8" />
                                 )}
                             </button>
                         </div>

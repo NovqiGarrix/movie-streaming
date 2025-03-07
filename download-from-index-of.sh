@@ -1,0 +1,1 @@
+wget --no-check-certificate -r -nH --cut-dirs=4 --no-parent https://43.251.84.25:8080/TVSeries/EnglishTVSeries/The%20Witcher/Season%2002/
